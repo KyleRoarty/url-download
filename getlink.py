@@ -4,6 +4,8 @@ import re
 import wget
 import validators
 import requests
+import time
+import concurrent.futures
 from bs4 import BeautifulSoup
 from argparse import ArgumentParser
 
@@ -23,8 +25,10 @@ def loop(domain, url):
 
     while True:
         links = slop.findAll('a', rel='bookmark', href=True, text=True)
-        for link in links:
-            ret_dls += getFiles(domain, link.get('href'))
+
+        executor = concurrent.futures.ThreadPoolExecutor(10)
+        ret_dls += [executor.submit(getFiles, domain, link.get('href')) for link in links]
+        concurrent.futures.wait(ret_dls)
 
         if slop.find('link', rel='next', href=True) is None:
             print "None!"
@@ -50,9 +54,12 @@ def getFiles(domain, url):
         #if not validators.url(l):
         #   dls.append(domain + l)
         #else:
-            dls.append(l)
+            dls += l
 
     return dls
+
+def download(future):
+    wget.download(''.join(future.result()))
 
 def main():
 
@@ -62,14 +69,25 @@ def main():
 
 
     if True:
+        start = time.time()
         dls = loop(domain, pargs.url)
+        end = time.time()
+        diff_get_links = end-start
     else:
         dls = getFiles(domain, pargs.url)
 
 
-    for dl in dls:
-        print dl
-        #wget.download(dl)
+
+    start = time.time()
+    executor = concurrent.futures.ThreadPoolExecutor(len(dls))
+    futures = [executor.submit(download, dl) for dl in dls]
+    concurrent.futures.wait(futures)
+    end = time.time()
+    print diff_get_links
+    print end-start
+#    for dl in dls:
+#        print ''.join(dl.result())
+#        wget.download(dl)
 
 if __name__ == '__main__':
     main()
