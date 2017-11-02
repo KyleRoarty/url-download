@@ -99,7 +99,7 @@ def main():
     dls = [dl.result() for dl in dls]
     dls = [url for dl in dls for url in dl]
     print len(dls)
-    executor = concurrent.futures.ThreadPoolExecutor(len(dls)/32)
+    executor = concurrent.futures.ThreadPoolExecutor(100)
     futures = [executor.submit(download, dl) for dl in dls]
     concurrent.futures.wait(futures)
     end = time.time()
