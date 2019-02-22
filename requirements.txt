@@ -1,0 +1,5 @@
+wget
+validators
+requests
+beautifulsoup4
+futures
